@@ -26,6 +26,9 @@
     "build": "node build.js && npm run minify",
     "minify": "node_modules/.bin/uglifyjs dist/global/done-ssr-incremental-rendering-client.js > dist/global/done-ssr-incremental-rendering-client.min.js"
   },
+  "steal": {
+    "main": "done-ssr-incremental-rendering-client"
+  },
   "license": "MIT",
   "devDependencies": {
     "dom-patch": "^2.1.0",
