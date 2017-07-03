@@ -1,0 +1,22 @@
+<!doctype html>
+
+<html lang="en">
+<head><title>Some Title</title>
+<body>
+	<script src="../helpers.js"></script>
+	<script>
+		testHelpers.mockFetch([[{
+			type: "insert",
+			route: "0.1", // The body
+			node: {
+				3: "DIV",
+				4: [["id","testing"]],
+				5: [{1:"Test"}]
+			}
+		}]]);
+	</script>
+
+	<script src="../../dist/global/done-ssr-incremental-rendering-client.js"
+		data-streamurl="/done-ssr-instr-1"></script>
+</body>
+</html>
