@@ -1,6 +1,6 @@
 {
   "name": "done-ssr-incremental-rendering-client",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "dist/global/done-ssr-incremental-rendering-client.js",
   "description": "The client code for the incremental renderer",
   "homepage": "https://github.com/donejs/done-ssr-incremental-rendering-client",
