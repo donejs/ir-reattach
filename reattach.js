@@ -22,6 +22,8 @@ function createAttacher() {
 	}
 
 	function doneSsrAttach(fragment) {
+		var mo = new MutationObserver(checkCompleteness);
+
 		function checkCompleteness() {
 			var docDepth = depth(document);
 			var fragDepth = depth(fragment);
@@ -45,7 +47,6 @@ function createAttacher() {
 			}
 		}
 
-		var mo = new MutationObserver(checkCompleteness);
 		mo.observe(fragment, {childList: true, subtree: true});
 	}
 
