@@ -27,7 +27,13 @@ function createAttacher() {
 			var fragDepth = depth(fragment);
 
 			// Update whether or not attachment is complete
-			attacher.attached = docDepth <= fragDepth;
+			// if the fragment no longer has children, it means done-autorender
+			// Has already done the swap.
+			if(!fragment.firstChild) {
+				attacher.attached = true;
+			} else {
+				attacher.attached = docDepth <= fragDepth;
+			}
 
 			if(attacher.attached) {
 				mo.disconnect();
