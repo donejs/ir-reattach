@@ -1,5 +1,6 @@
 {
 	"globals": {
+		"self": true,
 		"steal": true,
 		"can": true,
 		"Zepto": true,
