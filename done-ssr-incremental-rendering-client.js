@@ -4,6 +4,10 @@ var createAttacher = require("./reattach");
 var streamurl = document.currentScript.dataset.streamurl;
 var att = createAttacher();
 
+function isAttached() {
+	return document.documentElement.hasAttribute("data-attached");
+}
+
 function render(instruction){
 	apply(document, instruction);
 }
@@ -20,7 +24,7 @@ fetch(streamurl, {
 			var chunk = decoder.decode(resultValue);
 
 			// If already attached stop reading
-			if(att.attached) {
+			if(isAttached()) {
 				return;
 			}
 
