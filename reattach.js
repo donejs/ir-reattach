@@ -21,28 +21,29 @@ function createAttacher() {
 		return i;
 	}
 
+	function isAttached() {
+		return document.documentElement.hasAttribute("data-attached");
+	}
+
 	function doneSsrAttach(fragment) {
 		var mo = new MutationObserver(checkCompleteness);
 
 		function checkCompleteness() {
 			var docDepth = depth(document);
 			var fragDepth = depth(fragment);
+			var attached = isAttached();
 
-			// Update whether or not attachment is complete
-			// if the fragment no longer has children, it means done-autorender
-			// Has already done the swap.
-			if(!fragment.firstChild) {
-				attacher.attached = true;
-			} else {
-				attacher.attached = docDepth <= fragDepth;
+			if(!attached) {
+				attached = docDepth <= fragDepth;
 			}
 
-			if(attacher.attached) {
+			if(attached) {
 				mo.disconnect();
 				// reattach now
-				if(fragment.firstChild) {
+				if(!isAttached()) {
 					swap(document.head, fragment.querySelector("head"));
 					swap(document.body, fragment.querySelector("body"));
+					document.documentElement.setAttribute("data-attached", "");
 				}
 			}
 		}
