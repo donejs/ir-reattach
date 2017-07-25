@@ -53,7 +53,7 @@ function createAttacher() {
 
 	function isScriptOrStyle(node) {
 		var nn = node.nodeName;
-		return nn && (nn === "SCRIPT" || nn === "STYLE" || (nn === "LINK" && nn.rel === "stylesheet"));
+		return nn && (nn === "SCRIPT" || nn === "STYLE" || (nn === "LINK" && node.rel === "stylesheet"));
 	}
 
 	function swap(parent, newParent) {
