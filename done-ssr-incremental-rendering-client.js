@@ -19,6 +19,12 @@ function removeSelf() {
 	}
 }
 
+var start = function() {
+	// Start doing reattachment
+	doneSsrAttach(window.parent.document.documentElement, removeSelf);
+	start = Function.prototype;
+};
+
 fetch(streamurl, {
 	credentials: "same-origin"
 }).then(function(response){
@@ -44,6 +50,7 @@ fetch(streamurl, {
 				render(instruction);
 			});
 
+			start();
 			if(!result.done) {
 				return read();
 			}
@@ -56,6 +63,3 @@ fetch(streamurl, {
 });
 
 var doneSsrAttach = att.doneSsrAttach;
-
-// Start doing reattachment
-doneSsrAttach(window.parent.document.documentElement, removeSelf);
