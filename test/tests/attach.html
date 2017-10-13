@@ -3,53 +3,20 @@
 <html lang="en">
 <head><title>Some Title</title>
 <body>
-	<script src="../helpers.js"></script>
-	<script>
-		testHelpers.mockFetch([[{
-			type: "insert",
-			route: "0.1", // The body
-			node: {
-				3: "DIV",
-				4: [["id","testing"]],
-				5: [{1:"Test"}]
-			}
-		}]]);
-	</script>
+	<iframe src="./attach-iframe.html"></iframe>
+	<script data-noop></script>
 
-	<script src="../../dist/global/done-ssr-incremental-rendering-client.js"
-		data-streamurl="/done-ssr-instr-1"></script>
+	<script data-noop></script>
+	<script data-noop></script>
 	<script>
 	(function(){
 		var cel = document.createElement.bind(document);
 		var ctn = document.createTextNode.bind(document);
 
-		var frag = document.createDocumentFragment();
-		doneSsrAttach(frag);
-
-		var head = cel("head");
-		var title = cel("title");
-		title.appendChild(ctn("Some Title"));
-		head.appendChild(title);
-		head.appendChild(ctn(""));
-
-		var body = cel("body");
-		for(var i = 0; i < 4; i++) {
-			var s = cel("script");
-			s.appendChild(ctn('"use strict";'));
-
-			body.appendChild(ctn(""));
-			body.appendChild(s);
-		}
 		var div = cel("div");
 		div.id = "testing";
 		div.appendChild(ctn("Testing"));
-		body.appendChild(div);
-
-		var html = cel("html");
-		html.appendChild(head);
-		html.appendChild(body);
-
-		frag.appendChild(html);
+		document.body.appendChild(div);
 	})();
 	</script>
 </body>
