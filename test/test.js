@@ -9,6 +9,7 @@ QUnit.module("Basics", {
 	}
 });
 
+
 QUnit.test("Works", function(){
   F("#testing").exists("The instruction was added");
 });

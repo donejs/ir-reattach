@@ -12,6 +12,13 @@ function render(instruction){
 	apply(document, instruction);
 }
 
+function removeSelf() {
+	var p = window.parent;
+	if(p.closeSsrIframe) {
+		p.closeSsrIframe();
+	}
+}
+
 fetch(streamurl, {
 	credentials: "same-origin"
 }).then(function(response){
@@ -48,4 +55,7 @@ fetch(streamurl, {
 	});
 });
 
-self.doneSsrAttach = att.doneSsrAttach;
+var doneSsrAttach = att.doneSsrAttach;
+
+// Start doing reattachment
+doneSsrAttach(window.parent.document.documentElement, removeSelf);

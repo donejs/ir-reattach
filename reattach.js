@@ -25,7 +25,8 @@ function createAttacher() {
 		return document.documentElement.hasAttribute("data-attached");
 	}
 
-	function doneSsrAttach(fragment) {
+	function doneSsrAttach(fragment, callback) {
+		if(!callback) callback = Function.prototype;
 		var mo = new MutationObserver(checkCompleteness);
 
 		function checkCompleteness() {
@@ -41,44 +42,13 @@ function createAttacher() {
 				mo.disconnect();
 				// reattach now
 				if(!isAttached()) {
-					swap(document.head, fragment.querySelector("head"));
-					swap(document.body, fragment.querySelector("body"));
 					document.documentElement.setAttribute("data-attached", "");
+					callback();
 				}
 			}
 		}
 
 		mo.observe(fragment, {childList: true, subtree: true});
-	}
-
-	function isScriptOrStyle(node) {
-		var nn = node.nodeName;
-		return nn && (nn === "SCRIPT" || nn === "STYLE" || (nn === "LINK" && node.rel === "stylesheet"));
-	}
-
-	function swap(parent, newParent) {
-		if(!newParent) {
-			return;
-		}
-
-		function loop(parent, cb) {
-			var child = parent.firstChild, next;
-			while(child) {
-				next = child.nextSibling;
-				if(!isScriptOrStyle(child)) {
-					cb(child);
-				}
-				child = next;
-			}
-		}
-
-		loop(parent, function(child){
-			parent.removeChild(child);
-		});
-
-		loop(newParent, function(child){
-			parent.appendChild(child);
-		});
 	}
 
 	return attacher;
