@@ -26,7 +26,7 @@ function createAttacher() {
 	}
 
 	function doneSsrAttach(fragment, callback) {
-		if(!callback) callback = Function.prototype;
+		if(!callback) { callback = Function.prototype; }
 		var mo = new MutationObserver(checkCompleteness);
 
 		function checkCompleteness() {
