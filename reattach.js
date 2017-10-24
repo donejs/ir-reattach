@@ -30,7 +30,7 @@ function createAttacher() {
 		var mo = new MutationObserver(checkCompleteness);
 
 		function checkCompleteness() {
-			var docDepth = depth(document);
+			var docDepth = depth(document.documentElement);
 			var fragDepth = depth(fragment);
 			var attached = isAttached();
 
