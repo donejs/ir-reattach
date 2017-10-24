@@ -603,7 +603,7 @@ define('dom-patch/apply', [
 ], function (require, exports, module) {
     module.exports = require('dom-patch/src/apply/apply');
 });
-/*done-ssr-incremental-rendering-client@2.0.1#reattach*/
+/*done-ssr-incremental-rendering-client@2.0.2#reattach*/
 define('done-ssr-incremental-rendering-client/reattach', function (require, exports, module) {
     module.exports = createAttacher;
     function createAttacher() {
@@ -654,7 +654,7 @@ define('done-ssr-incremental-rendering-client/reattach', function (require, expo
         return attacher;
     }
 });
-/*done-ssr-incremental-rendering-client@2.0.1#done-ssr-incremental-rendering-client*/
+/*done-ssr-incremental-rendering-client@2.0.2#done-ssr-incremental-rendering-client*/
 define('done-ssr-incremental-rendering-client', [
     'require',
     'exports',
