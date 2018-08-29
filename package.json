@@ -1,12 +1,12 @@
 {
-  "name": "done-ssr-incremental-rendering-client",
+  "name": "ir-reattach",
   "version": "2.0.3",
-  "main": "dist/global/done-ssr-incremental-rendering-client.js",
+  "main": "src/ir-reattach.js",
   "description": "The client code for the incremental renderer",
-  "homepage": "https://github.com/donejs/done-ssr-incremental-rendering-client",
+  "homepage": "https://github.com/donejs/ir-reattach",
   "repository": {
     "type": "git",
-    "url": "git://github.com/donejs/done-ssr-incremental-rendering-client.git"
+    "url": "git://github.com/donejs/ir-reattach.git"
   },
   "author": {
     "name": "DoneJS Contributors",
@@ -17,27 +17,23 @@
     "preversion": "npm test && npm run build",
     "version": "git commit -am \"Update version number\" && git checkout -b release && git add -f dist/",
     "postpublish": "git push --tags && git checkout master && git branch -D release && git push",
-    "testee": "testee test/test.html --browsers firefox",
+    "testee": "testee test/test.html --config=testee.json",
     "test": "npm run jshint && node build && npm run testee",
     "jshint": "jshint ./*.js --config",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish",
     "build": "node build.js && npm run minify",
-    "minify": "node_modules/.bin/uglifyjs dist/global/done-ssr-incremental-rendering-client.js > dist/global/done-ssr-incremental-rendering-client.min.js"
-  },
-  "steal": {
-    "main": "done-ssr-incremental-rendering-client"
+    "minify": "node_modules/.bin/uglifyjs dist/global/ir-reattach.js > dist/global/ir-reattach.min.js"
   },
   "license": "MIT",
   "devDependencies": {
-    "dom-patch": "^2.1.5",
+    "done-mutation": "^1.0.0",
     "funcunit": "^3.4.2",
     "jshint": "^2.9.1",
-    "steal": "^1.3.1",
+    "steal": "^2.0.0",
     "steal-qunit": "^1.0.1",
-    "steal-tools": "^1.2.0",
-    "testee": "^0.3.0",
-    "uglify-js": "^3.0.23"
+    "steal-tools": "^2.0.0",
+    "testee": "^0.8.0"
   }
 }

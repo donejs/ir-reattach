@@ -3,21 +3,21 @@
 <html lang="en">
 <head><title>Some Title</title>
 <body>
-	<iframe src="./attach-iframe.html"></iframe>
+	<iframe id="attachFrame" src="./attach-iframe.html"></iframe>
 	<script data-noop></script>
 
-	<script data-noop></script>
-	<script data-noop></script>
-	<script>
-	(function(){
-		var cel = document.createElement.bind(document);
-		var ctn = document.createTextNode.bind(document);
+	<script type="module">
+	self.closeSsrIframe = function() {
+		attachFrame.parentNode.removeChild(attachFrame);
+	};
 
-		var div = cel("div");
+	const window = attachFrame.contentWindow;
+	window.addEventListener("reattach-listening", () => {
+		let div = document.createElement("div");
 		div.id = "testing";
-		div.appendChild(ctn("Testing"));
+		div.appendChild(document.createTextNode("Testing"));
 		document.body.appendChild(div);
-	})();
+	});
 	</script>
 </body>
 </html>
