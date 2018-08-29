@@ -1,4 +1,6 @@
-var stealTools = require("steal-tools");
+// jshint ignore: start
+
+const stealTools = require("steal-tools");
 
 async function run() {
 	await stealTools.export({
