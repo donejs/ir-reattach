@@ -5,13 +5,13 @@ var testSauceLabs = require('test-saucelabs');
 // https://github.com/SeleniumHQ/selenium/wiki/DesiredCapabilities
 var platforms = [{
   browserName: 'chrome',
-  platform: 'OS X 10.11',
-  version: '68.0'
+  platform: 'OS X 10.13',
+  version: 'latest'
 },
 {
   browserName: 'chrome',
   platform: 'Windows 10',
-  version: '68.0'
+  version: 'latest'
 }];
 
 var url = 'http://localhost:3000/test/test.html';
