@@ -14,7 +14,7 @@ QUnit.test("Works", function(){
   F("#testing").exists("The instruction was added");
 });
 
-QUnit.module("doneSsrAttach", {
+QUnit.module("attach", {
 	setup: function(){
 		F.open("//tests/attach.html");
 	}
@@ -22,4 +22,5 @@ QUnit.module("doneSsrAttach", {
 
 QUnit.test("Swaps a frament into the document", function(){
 	F("#testing").exists().text(/Testing/, "Updated to the autorendered content");
+	F("iframe").missing("iframe removed");
 });
