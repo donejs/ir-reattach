@@ -19,6 +19,7 @@
     "postpublish": "git push --tags && git checkout master && git branch -D release && git push",
     "testee": "testee test/test.html --config=testee.json",
     "test": "npm run jshint && node build && npm run testee",
+    "http-server": "http-server -p 3000 --silent",
     "ci": "node test/test-sauce-labs.js",
     "jshint": "jshint ./*.js --config",
     "release:patch": "npm version patch && npm publish",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "done-mutation": "^1.0.0",
     "funcunit": "^3.4.2",
+    "http-server": "^0.11.1",
     "jshint": "^2.9.1",
     "steal": "^2.0.0",
     "steal-qunit": "^1.0.1",
