@@ -19,6 +19,7 @@
     "postpublish": "git push --tags && git checkout master && git branch -D release && git push",
     "testee": "testee test/test.html --config=testee.json",
     "test": "npm run jshint && node build && npm run testee",
+    "ci": "node test/test-sauce-labs.js",
     "jshint": "jshint ./*.js --config",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
@@ -34,6 +35,7 @@
     "steal": "^2.0.0",
     "steal-qunit": "^1.0.1",
     "steal-tools": "^2.0.0",
+    "test-saucelabs": "0.0.6",
     "testee": "^0.8.0"
   }
 }
