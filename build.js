@@ -12,7 +12,8 @@ async function run() {
 		},
 		outputs: {
 			"+bundled-es": {
-				dest: __dirname + "/ir-reattach.mjs"
+				dest: __dirname + "/ir-reattach.mjs",
+				removeDevelopmentCode: false
 			},
 			"+bundled-es minified": {
 				dest: __dirname + "/ir-reattach.min.mjs",
