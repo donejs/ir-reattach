@@ -9,7 +9,7 @@ const Instructions = {
 	Prop: 7
 };
 
-var doneMutation_1_0_0_tags = Instructions;
+var doneMutation_1_1_0_tags = Instructions;
 
 const parentSymbol = Symbol.for("done.parentNode");
 
@@ -120,7 +120,6 @@ class NodeIndex {
 	purge(node) {
 		// TODO this should do something different...
 		let index = this.for(node);
-		this.reIndexFrom(node);
 		this.map.delete(node);
 		this.parentMap.delete(node);
 		return index;
@@ -156,7 +155,7 @@ class NodeIndex {
 	}
 }
 
-var doneMutation_1_0_0_index = NodeIndex;
+var doneMutation_1_1_0_index = NodeIndex;
 
 function* toUint8(n) {
 	yield ((n >> 8) & 0xff); // high
@@ -167,7 +166,7 @@ function* encodeString(text) {
 	for(let i = 0, len = text.length; i < len; i++) {
 		yield text.charCodeAt(i);
 	}
-	yield doneMutation_1_0_0_tags.Zero;
+	yield doneMutation_1_1_0_tags.Zero;
 }
 
 function* encodeType(val) {
@@ -196,7 +195,7 @@ function* encodeElement(element) {
 		yield* encodeString(attribute.name);
 		yield* encodeString(attribute.value);
 	}
-	yield doneMutation_1_0_0_tags.Zero;
+	yield doneMutation_1_1_0_tags.Zero;
 
 	// Children
 	let child = element.firstChild;
@@ -204,7 +203,7 @@ function* encodeElement(element) {
 		yield* encodeNode(child);
 		child = child.nextSibling;
 	}
-	yield doneMutation_1_0_0_tags.Zero; // End of children
+	yield doneMutation_1_1_0_tags.Zero; // End of children
 }
 
 function* encodeNode(node) {
@@ -224,10 +223,10 @@ function* encodeNode(node) {
 
 class MutationEncoder {
 	constructor(rootOrIndex) {
-		if(rootOrIndex instanceof doneMutation_1_0_0_index) {
+		if(rootOrIndex instanceof doneMutation_1_1_0_index) {
 			this.index = rootOrIndex;
 		} else {
-			this.index = new doneMutation_1_0_0_index(rootOrIndex);
+			this.index = new doneMutation_1_1_0_index(rootOrIndex);
 		}
 
 		this._indexed = false;
@@ -243,7 +242,7 @@ class MutationEncoder {
 
 	*mutations(records) {
 		const index = this.index;
-		const movedNodes = new WeakSet();
+		const removedNodes = new WeakSet();
 
 		let i = 0, iLen = records.length;
 		let rangeStart = null, rangeEnd = null;
@@ -281,46 +280,50 @@ class MutationEncoder {
 					for(j = 0, jLen = record.removedNodes.length; j < jLen; j++) {
 						let node = record.removedNodes[j];
 
-						{
-							let [parentIndex, childIndex] = index.fromParent(node);
-							index.purge(node);
-							yield doneMutation_1_0_0_tags.Remove;
-							yield* toUint8(parentIndex);
-							yield* toUint8(childIndex);
+						// If part of this set, it means that this node
+						// was inserted and removed in the same Mutation event
+						// in this case nothing needs to be encoded.
+						if(removedNodes.has(node)) {
+							continue;
 						}
+
+						let [parentIndex, childIndex] = index.fromParent(node);
+						index.purge(node);
+						yield doneMutation_1_1_0_tags.Remove;
+						yield* toUint8(parentIndex);
+						yield* toUint8(childIndex);
 					}
 
 					for (let node of record.addedNodes) {
-						// If this node was moved we have already done a move instruction
-						if(movedNodes.has(node)) {
-							throw new Error("Moving nodes is not yet supported");
-							//movedNodes.delete(node);
-							//continue;
+						if(node.parentNode) {
+							let parentIndex = index.for(node.parentNode);
+							//index.reIndexFrom(node);
+
+							yield doneMutation_1_1_0_tags.Insert;
+							yield* toUint8(parentIndex);
+							yield* toUint8(getChildIndex(node.parentNode, node)); // ref
+							yield* encodeNode(node);
+						} else {
+							// No parent means it was removed in the same mutation.
+							// Add it to this set so that the removal can be ignored.
+							removedNodes.add(node);
 						}
-
-						let parentIndex = index.for(node.parentNode);
-						index.reIndexFrom(node);
-
-						yield doneMutation_1_0_0_tags.Insert;
-						yield* toUint8(parentIndex);
-						yield* toUint8(getChildIndex(node.parentNode, node)); // ref
-						yield* encodeNode(node);
 					}
 
 					break;
 				case "characterData":
-					yield doneMutation_1_0_0_tags.Text;
+					yield doneMutation_1_1_0_tags.Text;
 					yield* toUint8(index.for(record.target));
 					yield* encodeString(record.target.nodeValue);
 					break;
 				case "attributes":
 					let attributeValue = record.target.getAttribute(record.attributeName);
 					if(attributeValue == null) {
-						yield doneMutation_1_0_0_tags.RemoveAttr;
+						yield doneMutation_1_1_0_tags.RemoveAttr;
 						yield* toUint8(index.for(record.target));
 						yield* encodeString(record.attributeName);
 					} else {
-						yield doneMutation_1_0_0_tags.SetAttr;
+						yield doneMutation_1_1_0_tags.SetAttr;
 						yield* toUint8(index.for(record.target));
 						yield* encodeString(record.attributeName);
 						yield* encodeString(attributeValue);
@@ -346,13 +349,16 @@ class MutationEncoder {
 				}
 			}
 		}
+
+		// Reindex so that the next set up mutations will start from the correct indices
+		index.reIndexFrom();
 	}
 
 	*event(event) {
 		let index = this.index;
 		switch(event.type) {
 			case "change":
-				yield doneMutation_1_0_0_tags.Prop;
+				yield doneMutation_1_1_0_tags.Prop;
 				yield* toUint8(index.for(event.target));
 				if(event.target.type === "checkbox") {
 					yield* encodeString("checked");
@@ -386,6 +392,6 @@ function isRemovalRecord(record) {
 }
 
 
-var doneMutation_1_0_0_encoder = MutationEncoder;
+var doneMutation_1_1_0_encoder = MutationEncoder;
 
-export default doneMutation_1_0_0_encoder;
+export default doneMutation_1_1_0_encoder;

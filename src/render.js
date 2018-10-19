@@ -13,6 +13,10 @@ async function read(reader, patcher) {
 		return false;
 	}
 
+	//!steal-remove-start
+	log.instructions(value);
+	//!steal-remove-end
+
 	patcher.patch(value);
 	return true;
 }
@@ -21,10 +25,6 @@ async function incrementallyRender({fetch, url, onStart}) {
 	let response = await fetch(url, { crendentials: "same-origin" });
 	let reader = response.body.getReader();
 	let patcher = new MutationPatcher(document);
-
-	//!steal-remove-start
-	log.element(document);
-	//!steal-remove-end
 
 	await read(reader, patcher);
 	onStart();

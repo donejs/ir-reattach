@@ -25,12 +25,11 @@
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish",
-    "build": "node build.js && npm run minify",
-    "minify": "node_modules/.bin/uglifyjs dist/global/ir-reattach.js > dist/global/ir-reattach.min.js"
+    "build": "node build.js"
   },
   "license": "MIT",
   "devDependencies": {
-    "done-mutation": "^1.0.0",
+    "done-mutation": "^1.1.0",
     "funcunit": "^3.4.2",
     "http-server": "^0.11.1",
     "jshint": "^2.9.1",
