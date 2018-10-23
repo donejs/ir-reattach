@@ -9,7 +9,7 @@ const Instructions = {
 	Prop: 7
 };
 
-var doneMutation_1_1_0_tags = Instructions;
+var doneMutation_2_0_0_tags = Instructions;
 
 const parentSymbol = Symbol.for("done.parentNode");
 
@@ -67,7 +67,6 @@ class NodeIndex {
 				parentIndex.set(node, 0);
 				this.parentMap.set(tmp, 0);
 				tmp[parentSymbol] = node;
-
 				index++;
 			} else if ( tmp = node.nextSibling ) {
 				// If skipping or there is no first child, get the next sibling. If
@@ -75,11 +74,12 @@ class NodeIndex {
 				skip = false;
 				this.map.set(tmp, index);
 
+
 				let parentI = parentIndex.get(tmp.parentNode) + 1;
 				parentIndex.set(tmp.parentNode, parentI);
 				this.parentMap.set(tmp, parentI);
-				tmp[parentSymbol] = tmp.parentNode;
 
+				tmp[parentSymbol] = tmp.parentNode;
 				index++;
 			} else {
 				// Skipped or no first child and no next sibling, so traverse upwards,
@@ -155,7 +155,9 @@ class NodeIndex {
 	}
 }
 
-var doneMutation_1_1_0_index = NodeIndex;
+
+
+var doneMutation_2_0_0_index = NodeIndex;
 
 function* toUint8(n) {
 	yield ((n >> 8) & 0xff); // high
@@ -166,7 +168,7 @@ function* encodeString(text) {
 	for(let i = 0, len = text.length; i < len; i++) {
 		yield text.charCodeAt(i);
 	}
-	yield doneMutation_1_1_0_tags.Zero;
+	yield doneMutation_2_0_0_tags.Zero;
 }
 
 function* encodeType(val) {
@@ -195,7 +197,7 @@ function* encodeElement(element) {
 		yield* encodeString(attribute.name);
 		yield* encodeString(attribute.value);
 	}
-	yield doneMutation_1_1_0_tags.Zero;
+	yield doneMutation_2_0_0_tags.Zero;
 
 	// Children
 	let child = element.firstChild;
@@ -203,7 +205,7 @@ function* encodeElement(element) {
 		yield* encodeNode(child);
 		child = child.nextSibling;
 	}
-	yield doneMutation_1_1_0_tags.Zero; // End of children
+	yield doneMutation_2_0_0_tags.Zero; // End of children
 }
 
 function* encodeNode(node) {
@@ -223,10 +225,10 @@ function* encodeNode(node) {
 
 class MutationEncoder {
 	constructor(rootOrIndex) {
-		if(rootOrIndex instanceof doneMutation_1_1_0_index) {
+		if(rootOrIndex instanceof doneMutation_2_0_0_index) {
 			this.index = rootOrIndex;
 		} else {
-			this.index = new doneMutation_1_1_0_index(rootOrIndex);
+			this.index = new doneMutation_2_0_0_index(rootOrIndex);
 		}
 
 		this._indexed = false;
@@ -289,7 +291,7 @@ class MutationEncoder {
 
 						let [parentIndex, childIndex] = index.fromParent(node);
 						index.purge(node);
-						yield doneMutation_1_1_0_tags.Remove;
+						yield doneMutation_2_0_0_tags.Remove;
 						yield* toUint8(parentIndex);
 						yield* toUint8(childIndex);
 					}
@@ -299,7 +301,7 @@ class MutationEncoder {
 							let parentIndex = index.for(node.parentNode);
 							//index.reIndexFrom(node);
 
-							yield doneMutation_1_1_0_tags.Insert;
+							yield doneMutation_2_0_0_tags.Insert;
 							yield* toUint8(parentIndex);
 							yield* toUint8(getChildIndex(node.parentNode, node)); // ref
 							yield* encodeNode(node);
@@ -312,18 +314,18 @@ class MutationEncoder {
 
 					break;
 				case "characterData":
-					yield doneMutation_1_1_0_tags.Text;
+					yield doneMutation_2_0_0_tags.Text;
 					yield* toUint8(index.for(record.target));
 					yield* encodeString(record.target.nodeValue);
 					break;
 				case "attributes":
 					let attributeValue = record.target.getAttribute(record.attributeName);
 					if(attributeValue == null) {
-						yield doneMutation_1_1_0_tags.RemoveAttr;
+						yield doneMutation_2_0_0_tags.RemoveAttr;
 						yield* toUint8(index.for(record.target));
 						yield* encodeString(record.attributeName);
 					} else {
-						yield doneMutation_1_1_0_tags.SetAttr;
+						yield doneMutation_2_0_0_tags.SetAttr;
 						yield* toUint8(index.for(record.target));
 						yield* encodeString(record.attributeName);
 						yield* encodeString(attributeValue);
@@ -358,7 +360,7 @@ class MutationEncoder {
 		let index = this.index;
 		switch(event.type) {
 			case "change":
-				yield doneMutation_1_1_0_tags.Prop;
+				yield doneMutation_2_0_0_tags.Prop;
 				yield* toUint8(index.for(event.target));
 				if(event.target.type === "checkbox") {
 					yield* encodeString("checked");
@@ -374,14 +376,15 @@ class MutationEncoder {
 	}
 }
 
-function getChildIndex(parent, child) {
-	let index = 0;
+function getChildIndex(parent, child, collapseTextNodes) {
+	let index = -1;
 	let node = parent.firstChild;
 	while(node) {
+		index++;
+
 		if(node === child) {
 			return index;
 		}
-		index++;
 		node = node.nextSibling;
 	}
 	return -1;
@@ -391,7 +394,6 @@ function isRemovalRecord(record) {
 	return record.removedNodes.length > 0 && record.addedNodes.length === 0;
 }
 
+var doneMutation_2_0_0_encoder = MutationEncoder;
 
-var doneMutation_1_1_0_encoder = MutationEncoder;
-
-export default doneMutation_1_1_0_encoder;
+export default doneMutation_2_0_0_encoder;
