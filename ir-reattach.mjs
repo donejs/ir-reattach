@@ -9,7 +9,7 @@ const Instructions = {
 	Prop: 7
 };
 
-var doneMutation_2_0_0_tags = Instructions;
+var doneMutation_2_1_5_tags = Instructions;
 
 var decodeNode_1 = decodeNode;
 var decodeString_1 = decodeString;
@@ -22,18 +22,15 @@ function toUint16(iter) {
 	return (((high & 255) << 8) | (low & 255));
 }
 
+const decoder = new TextDecoder();
+
 function decodeString(bytes) {
-	let string = "";
-	while(true) {
-		let { value } = bytes.next();
-		switch(value) {
-			case doneMutation_2_0_0_tags.Zero:
-				return string;
-			default:
-				string += String.fromCharCode(value);
-				break;
-		}
+	let len = bytes.next().value;
+	let array = new Uint8Array(len);
+	for(let i = 0; i < len; i++) {
+		array[i] = bytes.next().value;
 	}
+	return decoder.decode(array);
 }
 
 function decodeType(bytes) {
@@ -73,7 +70,7 @@ function decodeElement(bytes, document) {
 
 	let parent = el;
 	let nodeType = bytes.next().value;
-	while(nodeType !== doneMutation_2_0_0_tags.Zero) {
+	while(nodeType !== doneMutation_2_1_5_tags.Zero) {
 		let el = decodeNode(bytes, nodeType, document);
 		parent.appendChild(el);
 		nodeType = bytes.next().value;
@@ -82,7 +79,7 @@ function decodeElement(bytes, document) {
 	return el;
 }
 
-var doneMutation_2_0_0_decode = {
+var doneMutation_2_1_5_decode = {
 	decodeNode: decodeNode_1,
 	decodeString: decodeString_1,
 	decodeType: decodeType_1,
@@ -91,7 +88,7 @@ var doneMutation_2_0_0_decode = {
 
 const {
 	decodeNode: decodeNode$1, decodeString: decodeString$1, decodeType: decodeType$1, toUint16: toUint16$1
-} = doneMutation_2_0_0_decode;
+} = doneMutation_2_1_5_decode;
 
 
 function sepNode(node) {
@@ -146,9 +143,9 @@ class MutationPatcher {
 			let index, ref, node, child;
 
 			switch(byte) {
-				case doneMutation_2_0_0_tags.Zero:
+				case doneMutation_2_1_5_tags.Zero:
 					break;
-				case doneMutation_2_0_0_tags.Insert:
+				case doneMutation_2_1_5_tags.Insert:
 					index = toUint16$1(iter);
 					ref = toUint16$1(iter);
 					let nodeType = iter.next().value;
@@ -157,7 +154,7 @@ class MutationPatcher {
 					let sibling = getChild(parent, ref);
 					parent.insertBefore(child, sibling);
 					break;
-				case doneMutation_2_0_0_tags.Remove:
+				case doneMutation_2_1_5_tags.Remove:
 					index = toUint16$1(iter);
 					let childIndex = toUint16$1(iter);
 					let el = this.walker.next(index).value;
@@ -165,25 +162,25 @@ class MutationPatcher {
 					el.removeChild(child);
 					this._startWalker();
 					break;
-				case doneMutation_2_0_0_tags.Text:
+				case doneMutation_2_1_5_tags.Text:
 					index = toUint16$1(iter);
 					let value = decodeString$1(iter);
 					node = this.walker.next(index).value;
 					node.nodeValue = value;
 					break;
-				case doneMutation_2_0_0_tags.SetAttr:
+				case doneMutation_2_1_5_tags.SetAttr:
 					index = toUint16$1(iter);
 					node = this.walker.next(index).value;
 					let attrName = decodeString$1(iter);
 					let attrValue = decodeString$1(iter);
 					node.setAttribute(attrName, attrValue);
 					break;
-				case doneMutation_2_0_0_tags.RemoveAttr:
+				case doneMutation_2_1_5_tags.RemoveAttr:
 					index = toUint16$1(iter);
 					node = this.walker.next(index).value;
 					node.removeAttribute(decodeString$1(iter));
 					break;
-				case doneMutation_2_0_0_tags.Prop:
+				case doneMutation_2_1_5_tags.Prop:
 					index = toUint16$1(iter);
 					node = this.walker.next(index).value;
 					node[decodeString$1(iter)] = decodeType$1(iter);
@@ -210,7 +207,7 @@ function getChild(parent, index) {
 	return child;
 }
 
-var doneMutation_2_0_0_patch = MutationPatcher;
+var doneMutation_2_1_5_patch = MutationPatcher;
 
 var isAttached = function() {
 	return document.documentElement.hasAttribute("data-attached");
@@ -218,6 +215,30 @@ var isAttached = function() {
 
 var common = {
 	isAttached: isAttached
+};
+
+var doneMutation_2_1_5_walk = function(node, callback, startIndex = 0) {
+	let skip, tmp;
+	let depth = 0;
+	let index = startIndex;
+
+	// Always start with the initial element.
+	do {
+		if ( !skip && (tmp = node.firstChild) ) {
+			depth++;
+			callback('child', node, tmp, index);
+			index++;
+		} else if ( tmp = node.nextSibling ) {
+			skip = false;
+			callback('sibling', node, tmp, index);
+			index++;
+		} else {
+			tmp = node.parentNode;
+			depth--;
+			skip = true;
+		}
+		node = tmp;
+	} while ( depth > 0 );
 };
 
 const parentSymbol = Symbol.for("done.parentNode");
@@ -231,11 +252,11 @@ class NodeIndex {
 		this._onMutations = this._onMutations.bind(this);
 	}
 
-	reIndexFrom() {
-		// TODO make this not horrible.
-		// This should walk up the parents until it finds a parent without
-		// Any nextSiblings.
-		let startNode = this.root;
+	reindex() {
+		this.walk(this.root);
+	}
+
+	reIndexFrom(startNode) {
 		this.walk(startNode);
 	}
 
@@ -254,59 +275,36 @@ class NodeIndex {
 
 	// Based on https://gist.github.com/cowboy/958000
 	walk(node, startIndex = 0) {
-		let skip, tmp;
 		let parentIndex = new Map();
 		parentIndex.set(node, 0);
 
-		// This depth value will be incremented as the depth increases and
-		// decremented as the depth decreases. The depth of the initial node is 0.
-		let depth = 0;
-		let index = startIndex;
+		doneMutation_2_1_5_walk(node, (type, node, child, index) => {
+			switch(type) {
+				case 'child': {
+					// Set the index of this node
+					this.map.set(child, index);
 
-		// Always start with the initial element.
-		do {
-			if ( !skip && (tmp = node.firstChild) ) {
-				// If not skipping, get the first child. If there is a first child,
-				// increment the index since traversing downwards.
-				depth++;
+					parentIndex.set(node, 0);
+					this.parentMap.set(child, 0);
+					child[parentSymbol] = node;
+					break;
+				}
+				case 'sibling': {
+					this.map.set(child, index);
 
-				// Set the index of this node
-				this.map.set(tmp, index);
+					let parentI = parentIndex.get(child.parentNode) + 1;
+					parentIndex.set(child.parentNode, parentI);
+					this.parentMap.set(child, parentI);
 
-				parentIndex.set(node, 0);
-				this.parentMap.set(tmp, 0);
-				tmp[parentSymbol] = node;
-				index++;
-			} else if ( tmp = node.nextSibling ) {
-				// If skipping or there is no first child, get the next sibling. If
-				// there is a next sibling, reset the skip flag.
-				skip = false;
-				this.map.set(tmp, index);
-
-
-				let parentI = parentIndex.get(tmp.parentNode) + 1;
-				parentIndex.set(tmp.parentNode, parentI);
-				this.parentMap.set(tmp, parentI);
-
-				tmp[parentSymbol] = tmp.parentNode;
-				index++;
-			} else {
-				// Skipped or no first child and no next sibling, so traverse upwards,
-				tmp = node.parentNode;
-				// and decrement the depth.
-				depth--;
-				// Enable skipping, so that in the next loop iteration, the children of
-				// the now-current node (parent node) aren't processed again.
-				skip = true;
+					child[parentSymbol] = child.parentNode;
+					break;
+				}
 			}
+		}, startIndex);
+	}
 
-			// Instead of setting node explicitly in each conditional block, use the
-			// tmp var and set it here.
-			node = tmp;
-
-			// Stop if depth comes back to 0 (or goes below zero, in conditions where
-			// the passed node has neither children nore next siblings).
-		} while ( depth > 0 );
+	contains(node) {
+		return this.map.has(node);
 	}
 
 	// Get the cached index of a Node. If you can't find that,
@@ -321,6 +319,13 @@ class NodeIndex {
 
 	fromParent(node) {
 		let parent = node[parentSymbol];
+
+		// If there is no parent it usually means the element was removed
+		// before the parent's insertion mutation occurred.
+		if(!parent) {
+			return null;
+		}
+
 		let parentIndex = this.for(parent);
 		let childIndex = this.parentMap.get(node);
 		return [parentIndex, childIndex];
@@ -358,7 +363,7 @@ class NodeIndex {
 		let index = this;
 		records.forEach(function(record){
 			record.addedNodes.forEach(function(node){
-				index.reIndexFrom(node);
+				index.reIndexFrom(node.parentNode);
 			});
 		});
 	}
@@ -366,18 +371,234 @@ class NodeIndex {
 
 
 
-var doneMutation_2_0_0_index = NodeIndex;
+var doneMutation_2_1_5_index = NodeIndex;
+
+function createCommonjsModule(fn, module) {
+	return module = { exports: {} }, fn(module, module.exports), module.exports;
+}
+
+var utf8_3_0_0_utf8 = createCommonjsModule(function (module, exports) {
+(function(root) {
+
+	var stringFromCharCode = String.fromCharCode;
+
+	// Taken from https://mths.be/punycode
+	function ucs2decode(string) {
+		var output = [];
+		var counter = 0;
+		var length = string.length;
+		var value;
+		var extra;
+		while (counter < length) {
+			value = string.charCodeAt(counter++);
+			if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
+				// high surrogate, and there is a next character
+				extra = string.charCodeAt(counter++);
+				if ((extra & 0xFC00) == 0xDC00) { // low surrogate
+					output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
+				} else {
+					// unmatched surrogate; only append this code unit, in case the next
+					// code unit is the high surrogate of a surrogate pair
+					output.push(value);
+					counter--;
+				}
+			} else {
+				output.push(value);
+			}
+		}
+		return output;
+	}
+
+	// Taken from https://mths.be/punycode
+	function ucs2encode(array) {
+		var length = array.length;
+		var index = -1;
+		var value;
+		var output = '';
+		while (++index < length) {
+			value = array[index];
+			if (value > 0xFFFF) {
+				value -= 0x10000;
+				output += stringFromCharCode(value >>> 10 & 0x3FF | 0xD800);
+				value = 0xDC00 | value & 0x3FF;
+			}
+			output += stringFromCharCode(value);
+		}
+		return output;
+	}
+
+	function checkScalarValue(codePoint) {
+		if (codePoint >= 0xD800 && codePoint <= 0xDFFF) {
+			throw Error(
+				'Lone surrogate U+' + codePoint.toString(16).toUpperCase() +
+				' is not a scalar value'
+			);
+		}
+	}
+	/*--------------------------------------------------------------------------*/
+
+	function createByte(codePoint, shift) {
+		return stringFromCharCode(((codePoint >> shift) & 0x3F) | 0x80);
+	}
+
+	function encodeCodePoint(codePoint) {
+		if ((codePoint & 0xFFFFFF80) == 0) { // 1-byte sequence
+			return stringFromCharCode(codePoint);
+		}
+		var symbol = '';
+		if ((codePoint & 0xFFFFF800) == 0) { // 2-byte sequence
+			symbol = stringFromCharCode(((codePoint >> 6) & 0x1F) | 0xC0);
+		}
+		else if ((codePoint & 0xFFFF0000) == 0) { // 3-byte sequence
+			checkScalarValue(codePoint);
+			symbol = stringFromCharCode(((codePoint >> 12) & 0x0F) | 0xE0);
+			symbol += createByte(codePoint, 6);
+		}
+		else if ((codePoint & 0xFFE00000) == 0) { // 4-byte sequence
+			symbol = stringFromCharCode(((codePoint >> 18) & 0x07) | 0xF0);
+			symbol += createByte(codePoint, 12);
+			symbol += createByte(codePoint, 6);
+		}
+		symbol += stringFromCharCode((codePoint & 0x3F) | 0x80);
+		return symbol;
+	}
+
+	function utf8encode(string) {
+		var codePoints = ucs2decode(string);
+		var length = codePoints.length;
+		var index = -1;
+		var codePoint;
+		var byteString = '';
+		while (++index < length) {
+			codePoint = codePoints[index];
+			byteString += encodeCodePoint(codePoint);
+		}
+		return byteString;
+	}
+
+	/*--------------------------------------------------------------------------*/
+
+	function readContinuationByte() {
+		if (byteIndex >= byteCount) {
+			throw Error('Invalid byte index');
+		}
+
+		var continuationByte = byteArray[byteIndex] & 0xFF;
+		byteIndex++;
+
+		if ((continuationByte & 0xC0) == 0x80) {
+			return continuationByte & 0x3F;
+		}
+
+		// If we end up here, it’s not a continuation byte
+		throw Error('Invalid continuation byte');
+	}
+
+	function decodeSymbol() {
+		var byte1;
+		var byte2;
+		var byte3;
+		var byte4;
+		var codePoint;
+
+		if (byteIndex > byteCount) {
+			throw Error('Invalid byte index');
+		}
+
+		if (byteIndex == byteCount) {
+			return false;
+		}
+
+		// Read first byte
+		byte1 = byteArray[byteIndex] & 0xFF;
+		byteIndex++;
+
+		// 1-byte sequence (no continuation bytes)
+		if ((byte1 & 0x80) == 0) {
+			return byte1;
+		}
+
+		// 2-byte sequence
+		if ((byte1 & 0xE0) == 0xC0) {
+			byte2 = readContinuationByte();
+			codePoint = ((byte1 & 0x1F) << 6) | byte2;
+			if (codePoint >= 0x80) {
+				return codePoint;
+			} else {
+				throw Error('Invalid continuation byte');
+			}
+		}
+
+		// 3-byte sequence (may include unpaired surrogates)
+		if ((byte1 & 0xF0) == 0xE0) {
+			byte2 = readContinuationByte();
+			byte3 = readContinuationByte();
+			codePoint = ((byte1 & 0x0F) << 12) | (byte2 << 6) | byte3;
+			if (codePoint >= 0x0800) {
+				checkScalarValue(codePoint);
+				return codePoint;
+			} else {
+				throw Error('Invalid continuation byte');
+			}
+		}
+
+		// 4-byte sequence
+		if ((byte1 & 0xF8) == 0xF0) {
+			byte2 = readContinuationByte();
+			byte3 = readContinuationByte();
+			byte4 = readContinuationByte();
+			codePoint = ((byte1 & 0x07) << 0x12) | (byte2 << 0x0C) |
+				(byte3 << 0x06) | byte4;
+			if (codePoint >= 0x010000 && codePoint <= 0x10FFFF) {
+				return codePoint;
+			}
+		}
+
+		throw Error('Invalid UTF-8 detected');
+	}
+
+	var byteArray;
+	var byteCount;
+	var byteIndex;
+	function utf8decode(byteString) {
+		byteArray = ucs2decode(byteString);
+		byteCount = byteArray.length;
+		byteIndex = 0;
+		var codePoints = [];
+		var tmp;
+		while ((tmp = decodeSymbol()) !== false) {
+			codePoints.push(tmp);
+		}
+		return ucs2encode(codePoints);
+	}
+
+	/*--------------------------------------------------------------------------*/
+
+	root.version = '3.0.0';
+	root.encode = utf8encode;
+	root.decode = utf8decode;
+
+}(exports));
+});
 
 function* toUint8(n) {
 	yield ((n >> 8) & 0xff); // high
 	yield n & 0xff; // low
 }
 
-function* encodeString(text) {
-	for(let i = 0, len = text.length; i < len; i++) {
-		yield text.charCodeAt(i);
+function* stringToBytes(text) {
+	let enc = utf8_3_0_0_utf8.encode(text);
+	let i = 0, point;
+	while((point = enc.codePointAt(i)) !== undefined) {
+		yield point;
+		i++;
 	}
-	yield doneMutation_2_0_0_tags.Zero;
+}
+
+function* encodeString(text) {
+	let arr = Uint8Array.from(stringToBytes(text));
+	yield arr.length;
+	yield* arr;
 }
 
 function* encodeType(val) {
@@ -406,7 +627,7 @@ function* encodeElement(element) {
 		yield* encodeString(attribute.name);
 		yield* encodeString(attribute.value);
 	}
-	yield doneMutation_2_0_0_tags.Zero;
+	yield doneMutation_2_1_5_tags.Zero;
 
 	// Children
 	let child = element.firstChild;
@@ -414,7 +635,7 @@ function* encodeElement(element) {
 		yield* encodeNode(child);
 		child = child.nextSibling;
 	}
-	yield doneMutation_2_0_0_tags.Zero; // End of children
+	yield doneMutation_2_1_5_tags.Zero; // End of children
 }
 
 function* encodeNode(node) {
@@ -432,12 +653,104 @@ function* encodeNode(node) {
 	}
 }
 
+function* encodeRemovalMutation(node, parentIndex, childIndex) {
+	yield doneMutation_2_1_5_tags.Remove;
+	yield* toUint8(parentIndex);
+	yield* toUint8(childIndex);
+}
+
+function* encodeAddedMutation(node, parentIndex, childIndex) {
+	yield doneMutation_2_1_5_tags.Insert;
+	yield* toUint8(parentIndex);
+	yield* toUint8(childIndex); // ref
+	yield* encodeNode(node);
+}
+
+function* encodeCharacterMutation(node, parentIndex) {
+	yield doneMutation_2_1_5_tags.Text;
+	yield* toUint8(parentIndex);
+	yield* encodeString(node.nodeValue);
+}
+
+function* encodeAttributeMutation(record, parentIndex) {
+	let attributeValue = record.target.getAttribute(record.attributeName);
+	if(attributeValue == null) {
+		yield doneMutation_2_1_5_tags.RemoveAttr;
+		yield* toUint8(parentIndex);
+		yield* encodeString(record.attributeName);
+	} else {
+		yield doneMutation_2_1_5_tags.SetAttr;
+		yield* toUint8(parentIndex);
+		yield* encodeString(record.attributeName);
+		yield* encodeString(attributeValue);
+	}
+}
+
+function sortMutations(a, b) {
+	let aType = a[0];
+	let bType = b[0];
+	let aIndex = a[1];
+	let bIndex = b[1];
+
+	if(aIndex > bIndex) {
+		return -1;
+	} else if(aIndex < bIndex) {
+		return 1;
+	}
+
+	if(aType === 0) {
+		if(bType === 0) {
+			let aChild = a[3];
+			let bChild = b[3];
+
+			if(aIndex >= bIndex) {
+				if(aChild > bChild) {
+					return -1;
+				} else {
+					return 1;
+				}
+			} else {
+				return 1;
+			}
+		} else {
+			return -1;
+		}
+	}
+	else if(aType === 1) {
+		if(bType === 1) {
+			let aChild = a[3];
+			let bChild = b[3];
+
+			if(aIndex >= bIndex) {
+				if(aChild > bChild) {
+					return 1;
+				} else {
+					return -1;
+				}
+			} else {
+				return -1;
+			}
+		} else if(bType === 0) {
+			return 1;
+		} else {
+			return -1;
+		}
+	}
+	else {
+		if(aType > bType) {
+			return 1;
+		} else {
+			return -1;
+		}
+	}
+}
+
 class MutationEncoder {
 	constructor(rootOrIndex) {
-		if(rootOrIndex instanceof doneMutation_2_0_0_index) {
+		if(rootOrIndex instanceof doneMutation_2_1_5_index) {
 			this.index = rootOrIndex;
 		} else {
-			this.index = new doneMutation_2_0_0_index(rootOrIndex);
+			this.index = new doneMutation_2_1_5_index(rootOrIndex);
 		}
 
 		this._indexed = false;
@@ -454,43 +767,13 @@ class MutationEncoder {
 	*mutations(records) {
 		const index = this.index;
 		const removedNodes = new WeakSet();
+		const addedNodes = new Set();
+		const instructions = [];
 
-		let i = 0, iLen = records.length;
-		let rangeStart = null, rangeEnd = null;
-
-		//for(;i < iLen; i++) {
-		while(i < iLen) {
-			let record = records[i];
-			let j, jLen;
-
+		for(let record of records) {
 			switch(record.type) {
 				case "childList":
-					// This adjusts the index so that we do removals in reverse order
-					// Let's say we had an array of mutations like:
-					// [{removedNodes:[1]}, {removedNodes:[2]}, {removedNodes:[3]}
-					// {addedNodes:[1]}, {addedNodes:[2]}, {addedNodes:[3]}]
-					// We want to do all of the removals first, in reverse order
-					// And then proceed to the addedNode records.
-					// This is achieved by keeping a start and end index for the
-					// removal groupings
-					if(isRemovalRecord(record)) {
-						if(rangeStart == null) {
-							rangeStart = i;
-						}
-						if(rangeEnd == null) {
-							let nextRecord = records[i + 1];
-							if(nextRecord && isRemovalRecord(nextRecord)) {
-								i++;
-								continue;
-							} else {
-								rangeEnd = i;
-							}
-						}
-					}
-
-					for(j = 0, jLen = record.removedNodes.length; j < jLen; j++) {
-						let node = record.removedNodes[j];
-
+					for(let node of record.removedNodes) {
 						// If part of this set, it means that this node
 						// was inserted and removed in the same Mutation event
 						// in this case nothing needs to be encoded.
@@ -498,22 +781,31 @@ class MutationEncoder {
 							continue;
 						}
 
-						let [parentIndex, childIndex] = index.fromParent(node);
-						index.purge(node);
-						yield doneMutation_2_0_0_tags.Remove;
-						yield* toUint8(parentIndex);
-						yield* toUint8(childIndex);
+						let indices = index.fromParent(node);
+						if(indices !== null) {
+							let [parentIndex, childIndex] = indices;
+							index.purge(node);
+							instructions.push([0, parentIndex,
+								encodeRemovalMutation(node, parentIndex, childIndex),
+									childIndex]);
+						}
+
 					}
 
 					for (let node of record.addedNodes) {
-						if(node.parentNode) {
+						// If the parent was added in this same mutation set
+						// we don't need to (and can't) encode this mutation.
+						if(addedNodes.has(node.parentNode)) {
+							continue;
+						} else if(node.parentNode) {
 							let parentIndex = index.for(node.parentNode);
-							//index.reIndexFrom(node);
+							let childIndex = getChildIndex(node.parentNode, node);
 
-							yield doneMutation_2_0_0_tags.Insert;
-							yield* toUint8(parentIndex);
-							yield* toUint8(getChildIndex(node.parentNode, node)); // ref
-							yield* encodeNode(node);
+							instructions.push([1, parentIndex, encodeAddedMutation(node, parentIndex, childIndex), childIndex]);
+
+							doneMutation_2_1_5_walk(node, (type, node) => {
+								addedNodes.add(node);
+							});
 						} else {
 							// No parent means it was removed in the same mutation.
 							// Add it to this set so that the removal can be ignored.
@@ -523,53 +815,40 @@ class MutationEncoder {
 
 					break;
 				case "characterData":
-					yield doneMutation_2_0_0_tags.Text;
-					yield* toUint8(index.for(record.target));
-					yield* encodeString(record.target.nodeValue);
+					let node = record.target;
+					if(index.contains(node)) {
+						let parentIndex = index.for(node);
+						instructions.push([2, parentIndex,
+							encodeCharacterMutation(node, parentIndex)]);
+					}
+
 					break;
-				case "attributes":
-					let attributeValue = record.target.getAttribute(record.attributeName);
-					if(attributeValue == null) {
-						yield doneMutation_2_0_0_tags.RemoveAttr;
-						yield* toUint8(index.for(record.target));
-						yield* encodeString(record.attributeName);
-					} else {
-						yield doneMutation_2_0_0_tags.SetAttr;
-						yield* toUint8(index.for(record.target));
-						yield* encodeString(record.attributeName);
-						yield* encodeString(attributeValue);
+				case "attributes": {
+					let node = record.target;
+					if(index.contains(node)) {
+						let parentIndex = index.for(record.target);
+						instructions.push([3, parentIndex,
+							encodeAttributeMutation(record, parentIndex)]);
 					}
 					break;
-			}
-
-			// If there is no rangeStart/end proceed
-			if(rangeStart == null && rangeEnd == null) {
-				i++;
-			} else {
-				// If we have reached the first removal record
-				// Then all removals have been processed and we can
-				// skip ahead to the next non-removal record.
-				if(i === rangeStart) {
-					i = rangeEnd + 1;
-					rangeStart = null;
-					rangeEnd = null;
-				}
-				// Continue down to the next removal record.
-				else {
-					i--;
 				}
 			}
 		}
 
+		instructions.sort(sortMutations);
+		for(let [,,gen] of instructions) {
+			yield* gen;
+		}
+
 		// Reindex so that the next set up mutations will start from the correct indices
-		index.reIndexFrom();
+		index.reindex();
 	}
 
 	*event(event) {
 		let index = this.index;
 		switch(event.type) {
 			case "change":
-				yield doneMutation_2_0_0_tags.Prop;
+				yield doneMutation_2_1_5_tags.Prop;
 				yield* toUint8(index.for(event.target));
 				if(event.target.type === "checkbox") {
 					yield* encodeString("checked");
@@ -585,7 +864,7 @@ class MutationEncoder {
 	}
 }
 
-function getChildIndex(parent, child, collapseTextNodes) {
+function getChildIndex(parent, child) {
 	let index = -1;
 	let node = parent.firstChild;
 	while(node) {
@@ -599,18 +878,14 @@ function getChildIndex(parent, child, collapseTextNodes) {
 	return -1;
 }
 
-function isRemovalRecord(record) {
-	return record.removedNodes.length > 0 && record.addedNodes.length === 0;
-}
-
-var doneMutation_2_0_0_encoder = MutationEncoder;
+var doneMutation_2_1_5_encoder = MutationEncoder;
 
 const {
 	decodeString: decodeString$2,
 	decodeNode: decodeNode$2,
 	decodeType: decodeType$2,
 	toUint16: toUint16$2
-} = doneMutation_2_0_0_decode;
+} = doneMutation_2_1_5_decode;
 
 
 class MutationDecoder {
@@ -627,9 +902,9 @@ class MutationDecoder {
 			let index, ref;
 
 			switch(byte) {
-				case doneMutation_2_0_0_tags.Zero:
+				case doneMutation_2_1_5_tags.Zero:
 					break;
-				case doneMutation_2_0_0_tags.Insert:
+				case doneMutation_2_1_5_tags.Insert:
 					index = toUint16$2(iter);
 					ref = toUint16$2(iter);
 					let nodeType = iter.next().value;
@@ -637,38 +912,38 @@ class MutationDecoder {
 					mutation.node = decodeNode$2(iter, nodeType, document);
 					yield mutation;
 					break;
-			  case doneMutation_2_0_0_tags.Move:
+			  case doneMutation_2_1_5_tags.Move:
 					index = toUint16$2(iter);
 					let from = iter.next().value;
 					ref = iter.next().value;
 					mutation = {type: "move", from, index, ref};
 					yield mutation;
 					break;
-				case doneMutation_2_0_0_tags.Remove:
+				case doneMutation_2_1_5_tags.Remove:
 					index = toUint16$2(iter);
 					let child = toUint16$2(iter);
 					mutation = {type: "remove", index, child};
 					yield mutation;
 					break;
-				case doneMutation_2_0_0_tags.Text:
+				case doneMutation_2_1_5_tags.Text:
 					index = toUint16$2(iter);
 					let value = decodeString$2(iter);
 					mutation = {type: "text", index, value};
 					yield mutation;
 					break;
-				case doneMutation_2_0_0_tags.SetAttr:
+				case doneMutation_2_1_5_tags.SetAttr:
 					index = toUint16$2(iter);
 					let attrName = decodeString$2(iter);
 					let newValue = decodeString$2(iter);
 					mutation = {type: "set-attribute", index, attrName, newValue};
 					yield mutation;
 					break;
-				case doneMutation_2_0_0_tags.RemoveAttr:
+				case doneMutation_2_1_5_tags.RemoveAttr:
 					index = toUint16$2(iter);
 					mutation = {type: "remove-attribute", index, attrName: decodeString$2(iter)};
 					yield mutation;
 					break;
-				case doneMutation_2_0_0_tags.Prop:
+				case doneMutation_2_1_5_tags.Prop:
 					index = toUint16$2(iter);
 					mutation = {type: "property", index, property: decodeString$2(iter), value: decodeType$2(iter)};
 					yield mutation;
@@ -687,10 +962,10 @@ function toIterator(obj) {
 	return obj;
 }
 
-var doneMutation_2_0_0_decoder = MutationDecoder;
+var doneMutation_2_1_5_decoder = MutationDecoder;
 
 var instructions = function(bytes) {
-	let decoder = new doneMutation_2_0_0_decoder(document);
+	let decoder = new doneMutation_2_1_5_decoder(document);
 	console.group("Mutations");
 	for(let mutation of decoder.decode(bytes)) {
 		console.log(mutation);
@@ -699,8 +974,8 @@ var instructions = function(bytes) {
 };
 
 var element = function(root, options) {
-	let encoder = new doneMutation_2_0_0_encoder(root, options);
-	let decoder = new doneMutation_2_0_0_decoder(root.ownerDocument);
+	let encoder = new doneMutation_2_1_5_encoder(root, options);
+	let decoder = new doneMutation_2_1_5_decoder(root.ownerDocument);
 
 	function callback(records) {
 		console.group("Mutations");
@@ -716,7 +991,7 @@ var element = function(root, options) {
 	return mo;
 };
 
-var doneMutation_2_0_0_log = {
+var doneMutation_2_1_5_log = {
 	instructions: instructions,
 	element: element
 };
@@ -736,7 +1011,7 @@ async function read(reader, patcher) {
 	}
 
 	//!steal-remove-start
-	doneMutation_2_0_0_log.instructions(value);
+	doneMutation_2_1_5_log.instructions(value);
 	//!steal-remove-end
 
 	patcher.patch(value);
@@ -746,7 +1021,7 @@ async function read(reader, patcher) {
 async function incrementallyRender({fetch, url, onStart}) {
 	let response = await fetch(url, { crendentials: "same-origin" });
 	let reader = response.body.getReader();
-	let patcher = new doneMutation_2_0_0_patch(document);
+	let patcher = new doneMutation_2_1_5_patch(document);
 
 	await read(reader, patcher);
 	onStart();
