@@ -9,7 +9,7 @@ const Instructions = {
 	Prop: 7
 };
 
-var doneMutation_2_1_5_tags = Instructions;
+var doneMutation_2_1_6_tags = Instructions;
 
 var decodeNode_1 = decodeNode;
 var decodeString_1 = decodeString;
@@ -53,6 +53,8 @@ function decodeNode(bytes, nodeType, document) {
 			return document.createTextNode(decodeString(bytes));
 		case 1:
 			return decodeElement(bytes, document);
+		case 8:
+			return document.createComment(decodeString(bytes));
 		default:
 			throw new Error(`Unable to decode nodeType ${nodeType}`);
 	}
@@ -70,7 +72,7 @@ function decodeElement(bytes, document) {
 
 	let parent = el;
 	let nodeType = bytes.next().value;
-	while(nodeType !== doneMutation_2_1_5_tags.Zero) {
+	while(nodeType !== doneMutation_2_1_6_tags.Zero) {
 		let el = decodeNode(bytes, nodeType, document);
 		parent.appendChild(el);
 		nodeType = bytes.next().value;
@@ -79,7 +81,7 @@ function decodeElement(bytes, document) {
 	return el;
 }
 
-var doneMutation_2_1_5_decode = {
+var doneMutation_2_1_6_decode = {
 	decodeNode: decodeNode_1,
 	decodeString: decodeString_1,
 	decodeType: decodeType_1,
@@ -88,7 +90,7 @@ var doneMutation_2_1_5_decode = {
 
 const {
 	decodeNode: decodeNode$1, decodeString: decodeString$1, decodeType: decodeType$1, toUint16: toUint16$1
-} = doneMutation_2_1_5_decode;
+} = doneMutation_2_1_6_decode;
 
 
 function sepNode(node) {
@@ -143,9 +145,9 @@ class MutationPatcher {
 			let index, ref, node, child;
 
 			switch(byte) {
-				case doneMutation_2_1_5_tags.Zero:
+				case doneMutation_2_1_6_tags.Zero:
 					break;
-				case doneMutation_2_1_5_tags.Insert:
+				case doneMutation_2_1_6_tags.Insert:
 					index = toUint16$1(iter);
 					ref = toUint16$1(iter);
 					let nodeType = iter.next().value;
@@ -154,7 +156,7 @@ class MutationPatcher {
 					let sibling = getChild(parent, ref);
 					parent.insertBefore(child, sibling);
 					break;
-				case doneMutation_2_1_5_tags.Remove:
+				case doneMutation_2_1_6_tags.Remove:
 					index = toUint16$1(iter);
 					let childIndex = toUint16$1(iter);
 					let el = this.walker.next(index).value;
@@ -162,25 +164,25 @@ class MutationPatcher {
 					el.removeChild(child);
 					this._startWalker();
 					break;
-				case doneMutation_2_1_5_tags.Text:
+				case doneMutation_2_1_6_tags.Text:
 					index = toUint16$1(iter);
 					let value = decodeString$1(iter);
 					node = this.walker.next(index).value;
 					node.nodeValue = value;
 					break;
-				case doneMutation_2_1_5_tags.SetAttr:
+				case doneMutation_2_1_6_tags.SetAttr:
 					index = toUint16$1(iter);
 					node = this.walker.next(index).value;
 					let attrName = decodeString$1(iter);
 					let attrValue = decodeString$1(iter);
 					node.setAttribute(attrName, attrValue);
 					break;
-				case doneMutation_2_1_5_tags.RemoveAttr:
+				case doneMutation_2_1_6_tags.RemoveAttr:
 					index = toUint16$1(iter);
 					node = this.walker.next(index).value;
 					node.removeAttribute(decodeString$1(iter));
 					break;
-				case doneMutation_2_1_5_tags.Prop:
+				case doneMutation_2_1_6_tags.Prop:
 					index = toUint16$1(iter);
 					node = this.walker.next(index).value;
 					node[decodeString$1(iter)] = decodeType$1(iter);
@@ -207,7 +209,7 @@ function getChild(parent, index) {
 	return child;
 }
 
-var doneMutation_2_1_5_patch = MutationPatcher;
+var doneMutation_2_1_6_patch = MutationPatcher;
 
 var isAttached = function() {
 	return document.documentElement.hasAttribute("data-attached");
@@ -217,7 +219,7 @@ var common = {
 	isAttached: isAttached
 };
 
-var doneMutation_2_1_5_walk = function(node, callback, startIndex = 0) {
+var doneMutation_2_1_6_walk = function(node, callback, startIndex = 0) {
 	let skip, tmp;
 	let depth = 0;
 	let index = startIndex;
@@ -278,7 +280,7 @@ class NodeIndex {
 		let parentIndex = new Map();
 		parentIndex.set(node, 0);
 
-		doneMutation_2_1_5_walk(node, (type, node, child, index) => {
+		doneMutation_2_1_6_walk(node, (type, node, child, index) => {
 			switch(type) {
 				case 'child': {
 					// Set the index of this node
@@ -371,7 +373,7 @@ class NodeIndex {
 
 
 
-var doneMutation_2_1_5_index = NodeIndex;
+var doneMutation_2_1_6_index = NodeIndex;
 
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -627,7 +629,7 @@ function* encodeElement(element) {
 		yield* encodeString(attribute.name);
 		yield* encodeString(attribute.value);
 	}
-	yield doneMutation_2_1_5_tags.Zero;
+	yield doneMutation_2_1_6_tags.Zero;
 
 	// Children
 	let child = element.firstChild;
@@ -635,7 +637,7 @@ function* encodeElement(element) {
 		yield* encodeNode(child);
 		child = child.nextSibling;
 	}
-	yield doneMutation_2_1_5_tags.Zero; // End of children
+	yield doneMutation_2_1_6_tags.Zero; // End of children
 }
 
 function* encodeNode(node) {
@@ -646,6 +648,7 @@ function* encodeNode(node) {
 			yield* encodeElement(node);
 			break;
 		case 3:
+		case 8:
 			yield* encodeString(node.nodeValue);
 			break;
 		default:
@@ -654,20 +657,20 @@ function* encodeNode(node) {
 }
 
 function* encodeRemovalMutation(node, parentIndex, childIndex) {
-	yield doneMutation_2_1_5_tags.Remove;
+	yield doneMutation_2_1_6_tags.Remove;
 	yield* toUint8(parentIndex);
 	yield* toUint8(childIndex);
 }
 
 function* encodeAddedMutation(node, parentIndex, childIndex) {
-	yield doneMutation_2_1_5_tags.Insert;
+	yield doneMutation_2_1_6_tags.Insert;
 	yield* toUint8(parentIndex);
 	yield* toUint8(childIndex); // ref
 	yield* encodeNode(node);
 }
 
 function* encodeCharacterMutation(node, parentIndex) {
-	yield doneMutation_2_1_5_tags.Text;
+	yield doneMutation_2_1_6_tags.Text;
 	yield* toUint8(parentIndex);
 	yield* encodeString(node.nodeValue);
 }
@@ -675,11 +678,11 @@ function* encodeCharacterMutation(node, parentIndex) {
 function* encodeAttributeMutation(record, parentIndex) {
 	let attributeValue = record.target.getAttribute(record.attributeName);
 	if(attributeValue == null) {
-		yield doneMutation_2_1_5_tags.RemoveAttr;
+		yield doneMutation_2_1_6_tags.RemoveAttr;
 		yield* toUint8(parentIndex);
 		yield* encodeString(record.attributeName);
 	} else {
-		yield doneMutation_2_1_5_tags.SetAttr;
+		yield doneMutation_2_1_6_tags.SetAttr;
 		yield* toUint8(parentIndex);
 		yield* encodeString(record.attributeName);
 		yield* encodeString(attributeValue);
@@ -747,10 +750,10 @@ function sortMutations(a, b) {
 
 class MutationEncoder {
 	constructor(rootOrIndex) {
-		if(rootOrIndex instanceof doneMutation_2_1_5_index) {
+		if(rootOrIndex instanceof doneMutation_2_1_6_index) {
 			this.index = rootOrIndex;
 		} else {
-			this.index = new doneMutation_2_1_5_index(rootOrIndex);
+			this.index = new doneMutation_2_1_6_index(rootOrIndex);
 		}
 
 		this._indexed = false;
@@ -803,7 +806,7 @@ class MutationEncoder {
 
 							instructions.push([1, parentIndex, encodeAddedMutation(node, parentIndex, childIndex), childIndex]);
 
-							doneMutation_2_1_5_walk(node, (type, node) => {
+							doneMutation_2_1_6_walk(node, (type, node) => {
 								addedNodes.add(node);
 							});
 						} else {
@@ -848,7 +851,7 @@ class MutationEncoder {
 		let index = this.index;
 		switch(event.type) {
 			case "change":
-				yield doneMutation_2_1_5_tags.Prop;
+				yield doneMutation_2_1_6_tags.Prop;
 				yield* toUint8(index.for(event.target));
 				if(event.target.type === "checkbox") {
 					yield* encodeString("checked");
@@ -878,14 +881,14 @@ function getChildIndex(parent, child) {
 	return -1;
 }
 
-var doneMutation_2_1_5_encoder = MutationEncoder;
+var doneMutation_2_1_6_encoder = MutationEncoder;
 
 const {
 	decodeString: decodeString$2,
 	decodeNode: decodeNode$2,
 	decodeType: decodeType$2,
 	toUint16: toUint16$2
-} = doneMutation_2_1_5_decode;
+} = doneMutation_2_1_6_decode;
 
 
 class MutationDecoder {
@@ -902,9 +905,9 @@ class MutationDecoder {
 			let index, ref;
 
 			switch(byte) {
-				case doneMutation_2_1_5_tags.Zero:
+				case doneMutation_2_1_6_tags.Zero:
 					break;
-				case doneMutation_2_1_5_tags.Insert:
+				case doneMutation_2_1_6_tags.Insert:
 					index = toUint16$2(iter);
 					ref = toUint16$2(iter);
 					let nodeType = iter.next().value;
@@ -912,38 +915,38 @@ class MutationDecoder {
 					mutation.node = decodeNode$2(iter, nodeType, document);
 					yield mutation;
 					break;
-			  case doneMutation_2_1_5_tags.Move:
+			  case doneMutation_2_1_6_tags.Move:
 					index = toUint16$2(iter);
 					let from = iter.next().value;
 					ref = iter.next().value;
 					mutation = {type: "move", from, index, ref};
 					yield mutation;
 					break;
-				case doneMutation_2_1_5_tags.Remove:
+				case doneMutation_2_1_6_tags.Remove:
 					index = toUint16$2(iter);
 					let child = toUint16$2(iter);
 					mutation = {type: "remove", index, child};
 					yield mutation;
 					break;
-				case doneMutation_2_1_5_tags.Text:
+				case doneMutation_2_1_6_tags.Text:
 					index = toUint16$2(iter);
 					let value = decodeString$2(iter);
 					mutation = {type: "text", index, value};
 					yield mutation;
 					break;
-				case doneMutation_2_1_5_tags.SetAttr:
+				case doneMutation_2_1_6_tags.SetAttr:
 					index = toUint16$2(iter);
 					let attrName = decodeString$2(iter);
 					let newValue = decodeString$2(iter);
 					mutation = {type: "set-attribute", index, attrName, newValue};
 					yield mutation;
 					break;
-				case doneMutation_2_1_5_tags.RemoveAttr:
+				case doneMutation_2_1_6_tags.RemoveAttr:
 					index = toUint16$2(iter);
 					mutation = {type: "remove-attribute", index, attrName: decodeString$2(iter)};
 					yield mutation;
 					break;
-				case doneMutation_2_1_5_tags.Prop:
+				case doneMutation_2_1_6_tags.Prop:
 					index = toUint16$2(iter);
 					mutation = {type: "property", index, property: decodeString$2(iter), value: decodeType$2(iter)};
 					yield mutation;
@@ -962,10 +965,10 @@ function toIterator(obj) {
 	return obj;
 }
 
-var doneMutation_2_1_5_decoder = MutationDecoder;
+var doneMutation_2_1_6_decoder = MutationDecoder;
 
 var instructions = function(bytes) {
-	let decoder = new doneMutation_2_1_5_decoder(document);
+	let decoder = new doneMutation_2_1_6_decoder(document);
 	console.group("Mutations");
 	for(let mutation of decoder.decode(bytes)) {
 		console.log(mutation);
@@ -974,8 +977,8 @@ var instructions = function(bytes) {
 };
 
 var element = function(root, options) {
-	let encoder = new doneMutation_2_1_5_encoder(root, options);
-	let decoder = new doneMutation_2_1_5_decoder(root.ownerDocument);
+	let encoder = new doneMutation_2_1_6_encoder(root, options);
+	let decoder = new doneMutation_2_1_6_decoder(root.ownerDocument);
 
 	function callback(records) {
 		console.group("Mutations");
@@ -991,7 +994,7 @@ var element = function(root, options) {
 	return mo;
 };
 
-var doneMutation_2_1_5_log = {
+var doneMutation_2_1_6_log = {
 	instructions: instructions,
 	element: element
 };
@@ -1011,7 +1014,7 @@ async function read(reader, patcher) {
 	}
 
 	//!steal-remove-start
-	doneMutation_2_1_5_log.instructions(value);
+	doneMutation_2_1_6_log.instructions(value);
 	//!steal-remove-end
 
 	patcher.patch(value);
@@ -1021,7 +1024,7 @@ async function read(reader, patcher) {
 async function incrementallyRender({fetch, url, onStart}) {
 	let response = await fetch(url, { crendentials: "same-origin" });
 	let reader = response.body.getReader();
-	let patcher = new doneMutation_2_1_5_patch(document);
+	let patcher = new doneMutation_2_1_6_patch(document);
 
 	await read(reader, patcher);
 	onStart();

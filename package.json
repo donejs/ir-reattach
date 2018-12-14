@@ -29,7 +29,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "done-mutation": "^2.1.5",
+    "done-mutation": "^2.1.6",
     "funcunit": "^3.4.2",
     "http-server": "^0.11.1",
     "jshint": "^2.9.1",

@@ -9,9 +9,9 @@ const Instructions = {
 	Prop: 7
 };
 
-var doneMutation_2_1_5_tags = Instructions;
+var doneMutation_2_1_6_tags = Instructions;
 
-var doneMutation_2_1_5_walk = function(node, callback, startIndex = 0) {
+var doneMutation_2_1_6_walk = function(node, callback, startIndex = 0) {
 	let skip, tmp;
 	let depth = 0;
 	let index = startIndex;
@@ -72,7 +72,7 @@ class NodeIndex {
 		let parentIndex = new Map();
 		parentIndex.set(node, 0);
 
-		doneMutation_2_1_5_walk(node, (type, node, child, index) => {
+		doneMutation_2_1_6_walk(node, (type, node, child, index) => {
 			switch(type) {
 				case 'child': {
 					// Set the index of this node
@@ -165,7 +165,7 @@ class NodeIndex {
 
 
 
-var doneMutation_2_1_5_index = NodeIndex;
+var doneMutation_2_1_6_index = NodeIndex;
 
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -421,7 +421,7 @@ function* encodeElement(element) {
 		yield* encodeString(attribute.name);
 		yield* encodeString(attribute.value);
 	}
-	yield doneMutation_2_1_5_tags.Zero;
+	yield doneMutation_2_1_6_tags.Zero;
 
 	// Children
 	let child = element.firstChild;
@@ -429,7 +429,7 @@ function* encodeElement(element) {
 		yield* encodeNode(child);
 		child = child.nextSibling;
 	}
-	yield doneMutation_2_1_5_tags.Zero; // End of children
+	yield doneMutation_2_1_6_tags.Zero; // End of children
 }
 
 function* encodeNode(node) {
@@ -440,6 +440,7 @@ function* encodeNode(node) {
 			yield* encodeElement(node);
 			break;
 		case 3:
+		case 8:
 			yield* encodeString(node.nodeValue);
 			break;
 		default:
@@ -448,20 +449,20 @@ function* encodeNode(node) {
 }
 
 function* encodeRemovalMutation(node, parentIndex, childIndex) {
-	yield doneMutation_2_1_5_tags.Remove;
+	yield doneMutation_2_1_6_tags.Remove;
 	yield* toUint8(parentIndex);
 	yield* toUint8(childIndex);
 }
 
 function* encodeAddedMutation(node, parentIndex, childIndex) {
-	yield doneMutation_2_1_5_tags.Insert;
+	yield doneMutation_2_1_6_tags.Insert;
 	yield* toUint8(parentIndex);
 	yield* toUint8(childIndex); // ref
 	yield* encodeNode(node);
 }
 
 function* encodeCharacterMutation(node, parentIndex) {
-	yield doneMutation_2_1_5_tags.Text;
+	yield doneMutation_2_1_6_tags.Text;
 	yield* toUint8(parentIndex);
 	yield* encodeString(node.nodeValue);
 }
@@ -469,11 +470,11 @@ function* encodeCharacterMutation(node, parentIndex) {
 function* encodeAttributeMutation(record, parentIndex) {
 	let attributeValue = record.target.getAttribute(record.attributeName);
 	if(attributeValue == null) {
-		yield doneMutation_2_1_5_tags.RemoveAttr;
+		yield doneMutation_2_1_6_tags.RemoveAttr;
 		yield* toUint8(parentIndex);
 		yield* encodeString(record.attributeName);
 	} else {
-		yield doneMutation_2_1_5_tags.SetAttr;
+		yield doneMutation_2_1_6_tags.SetAttr;
 		yield* toUint8(parentIndex);
 		yield* encodeString(record.attributeName);
 		yield* encodeString(attributeValue);
@@ -541,10 +542,10 @@ function sortMutations(a, b) {
 
 class MutationEncoder {
 	constructor(rootOrIndex) {
-		if(rootOrIndex instanceof doneMutation_2_1_5_index) {
+		if(rootOrIndex instanceof doneMutation_2_1_6_index) {
 			this.index = rootOrIndex;
 		} else {
-			this.index = new doneMutation_2_1_5_index(rootOrIndex);
+			this.index = new doneMutation_2_1_6_index(rootOrIndex);
 		}
 
 		this._indexed = false;
@@ -597,7 +598,7 @@ class MutationEncoder {
 
 							instructions.push([1, parentIndex, encodeAddedMutation(node, parentIndex, childIndex), childIndex]);
 
-							doneMutation_2_1_5_walk(node, (type, node) => {
+							doneMutation_2_1_6_walk(node, (type, node) => {
 								addedNodes.add(node);
 							});
 						} else {
@@ -642,7 +643,7 @@ class MutationEncoder {
 		let index = this.index;
 		switch(event.type) {
 			case "change":
-				yield doneMutation_2_1_5_tags.Prop;
+				yield doneMutation_2_1_6_tags.Prop;
 				yield* toUint8(index.for(event.target));
 				if(event.target.type === "checkbox") {
 					yield* encodeString("checked");
@@ -672,6 +673,6 @@ function getChildIndex(parent, child) {
 	return -1;
 }
 
-var doneMutation_2_1_5_encoder = MutationEncoder;
+var doneMutation_2_1_6_encoder = MutationEncoder;
 
-export default doneMutation_2_1_5_encoder;
+export default doneMutation_2_1_6_encoder;
