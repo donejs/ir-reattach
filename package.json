@@ -1,6 +1,6 @@
 {
   "name": "ir-reattach",
-  "version": "4.0.4-pre.0",
+  "version": "4.0.4",
   "main": "src/ir-reattach.js",
   "description": "The client code for the incremental renderer",
   "homepage": "https://github.com/donejs/ir-reattach",
