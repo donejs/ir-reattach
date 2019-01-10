@@ -9,7 +9,7 @@ const Instructions = {
 	Prop: 7
 };
 
-var doneMutation_2_2_0_tags = Instructions;
+var doneMutation_3_0_0_tags = Instructions;
 
 var decodeNode_1 = decodeNode;
 var decodeString_1 = decodeString;
@@ -37,7 +37,8 @@ function* toUint16(iter) {
 const decoder = new TextDecoder();
 
 function* decodeString(bytes) {
-	let len = yield* next(bytes);
+	let len = yield* toUint16(bytes);
+
 	let array = new Uint8Array(len);
 	for(let i = 0; i < len; i++) {
 		array[i] = yield* next(bytes);
@@ -75,25 +76,28 @@ function* decodeNode(bytes, nodeType, document) {
 function* decodeElement(bytes, document) {
 	let el = document.createElement(yield* decodeString(bytes));
 
-	let attributeName = yield* decodeString(bytes);
-	while(attributeName) {
+	let attributeCount = yield* toUint16(bytes);
+	for(let i = 0; i < attributeCount; i++) {
+		let attributeName = yield* decodeString(bytes);
 		let attributeValue = yield* decodeString(bytes);
 		el.setAttribute(attributeName, attributeValue);
-		attributeName = yield* decodeString(bytes);
 	}
 
 	let parent = el;
-	let nodeType = yield* next(bytes);
-	while(nodeType !== doneMutation_2_2_0_tags.Zero) {
-		let el = yield* decodeNode(bytes, nodeType, document);
-		parent.appendChild(el);
-		nodeType = yield* next(bytes);
+	let hasChildren = yield* next(bytes);
+	if(hasChildren) {
+		let nodeType = yield* next(bytes);
+		while(nodeType !== doneMutation_3_0_0_tags.Zero) {
+			let el = yield* decodeNode(bytes, nodeType, document);
+			parent.appendChild(el);
+			nodeType = yield* next(bytes);
+		}
 	}
 
 	return el;
 }
 
-var doneMutation_2_2_0_decode = {
+var doneMutation_3_0_0_decode = {
 	decodeNode: decodeNode_1,
 	decodeString: decodeString_1,
 	decodeType: decodeType_1,
@@ -103,7 +107,7 @@ var doneMutation_2_2_0_decode = {
 
 const {
 	decodeNode: decodeNode$1, decodeString: decodeString$1, decodeType: decodeType$1, toUint16: toUint16$1, next: next$1
-} = doneMutation_2_2_0_decode;
+} = doneMutation_3_0_0_decode;
 
 
 function sepNode(node) {
@@ -168,9 +172,9 @@ class MutationPatcher {
 			let index, ref, node, child;
 
 			switch(byte) {
-				case doneMutation_2_2_0_tags.Zero:
+				case doneMutation_3_0_0_tags.Zero:
 					break;
-				case doneMutation_2_2_0_tags.Insert:
+				case doneMutation_3_0_0_tags.Insert:
 					index = yield* toUint16$1(this);
 					ref = yield* toUint16$1(this);
 					let nodeType = yield* next$1(this);
@@ -179,7 +183,7 @@ class MutationPatcher {
 					let sibling = getChild(parent, ref);
 					parent.insertBefore(child, sibling);
 					break;
-				case doneMutation_2_2_0_tags.Remove:
+				case doneMutation_3_0_0_tags.Remove:
 					index = yield* toUint16$1(this);
 					let childIndex = yield* toUint16$1(this);
 					let el = this.walker.next(index).value;
@@ -187,24 +191,24 @@ class MutationPatcher {
 					el.removeChild(child);
 					this._startWalker();
 					break;
-				case doneMutation_2_2_0_tags.Text:					index = yield* toUint16$1(this);
+				case doneMutation_3_0_0_tags.Text:					index = yield* toUint16$1(this);
 					let nodeValue = yield* decodeString$1(this);
 					node = this.walker.next(index).value;
 					node.nodeValue = nodeValue;
 					break;
-				case doneMutation_2_2_0_tags.SetAttr:
+				case doneMutation_3_0_0_tags.SetAttr:
 					index = yield* toUint16$1(this);
 					node = this.walker.next(index).value;
 					let attrName = yield* decodeString$1(this);
 					let attrValue = yield* decodeString$1(this);
 					node.setAttribute(attrName, attrValue);
 					break;
-				case doneMutation_2_2_0_tags.RemoveAttr:
+				case doneMutation_3_0_0_tags.RemoveAttr:
 					index = yield* toUint16$1(this);
 					node = this.walker.next(index).value;
 					node.removeAttribute(yield* decodeString$1(this));
 					break;
-				case doneMutation_2_2_0_tags.Prop: {
+				case doneMutation_3_0_0_tags.Prop: {
 					index = yield* toUint16$1(this);
 					node = this.walker.next(index).value;
 					let propName = yield* decodeString$1(this);
@@ -293,7 +297,7 @@ function getChild(parent, index) {
 	return child;
 }
 
-var doneMutation_2_2_0_patch = MutationPatcher;
+var doneMutation_3_0_0_patch = MutationPatcher;
 
 var isAttached = function() {
 	return document.documentElement.hasAttribute("data-attached");
@@ -303,7 +307,7 @@ var common = {
 	isAttached: isAttached
 };
 
-var doneMutation_2_2_0_walk = function(node, callback, startIndex = 0) {
+var doneMutation_3_0_0_walk = function(node, callback, startIndex = 0) {
 	let skip, tmp;
 	let depth = 0;
 	let index = startIndex;
@@ -364,7 +368,7 @@ class NodeIndex {
 		let parentIndex = new Map();
 		parentIndex.set(node, 0);
 
-		doneMutation_2_2_0_walk(node, (type, node, child, index) => {
+		doneMutation_3_0_0_walk(node, (type, node, child, index) => {
 			switch(type) {
 				case 'child': {
 					// Set the index of this node
@@ -457,7 +461,7 @@ class NodeIndex {
 
 
 
-var doneMutation_2_2_0_index = NodeIndex;
+var doneMutation_3_0_0_index = NodeIndex;
 
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -683,7 +687,7 @@ function* stringToBytes(text) {
 
 function* encodeString(text) {
 	let arr = Uint8Array.from(stringToBytes(text));
-	yield arr.length;
+	yield* toUint8(arr.length);
 	yield* arr;
 }
 
@@ -709,19 +713,24 @@ function* encodeElement(element) {
 	yield* encodeString(element.tagName.toLowerCase());
 
 	// Attributes
+	yield* toUint8(element.attributes.length);
 	for(let attribute of element.attributes) {
 		yield* encodeString(attribute.name);
 		yield* encodeString(attribute.value);
 	}
-	yield doneMutation_2_2_0_tags.Zero;
 
 	// Children
 	let child = element.firstChild;
-	while(child) {
-		yield* encodeNode(child);
-		child = child.nextSibling;
+	let hasChildren = !!child;
+	yield Number(hasChildren);
+
+	if(hasChildren) {
+		while(child) {
+			yield* encodeNode(child);
+			child = child.nextSibling;
+		}
+		yield doneMutation_3_0_0_tags.Zero; // End of children
 	}
-	yield doneMutation_2_2_0_tags.Zero; // End of children
 }
 
 function* encodeNode(node) {
@@ -733,7 +742,7 @@ function* encodeNode(node) {
 			break;
 		case 3:
 		case 8:
-			yield* encodeString(node.nodeValue);
+			yield* encodeString(textValue(node));
 			break;
 		default:
 			throw new Error(`Cannot yet encode nodeType ${node.nodeType}`);
@@ -741,36 +750,40 @@ function* encodeNode(node) {
 }
 
 function* encodeRemovalMutation(node, parentIndex, childIndex) {
-	yield doneMutation_2_2_0_tags.Remove;
+	yield doneMutation_3_0_0_tags.Remove;
 	yield* toUint8(parentIndex);
 	yield* toUint8(childIndex);
 }
 
 function* encodeAddedMutation(node, parentIndex, childIndex) {
-	yield doneMutation_2_2_0_tags.Insert;
+	yield doneMutation_3_0_0_tags.Insert;
 	yield* toUint8(parentIndex);
 	yield* toUint8(childIndex); // ref
 	yield* encodeNode(node);
 }
 
 function* encodeCharacterMutation(node, parentIndex) {
-	yield doneMutation_2_2_0_tags.Text;
+	yield doneMutation_3_0_0_tags.Text;
 	yield* toUint8(parentIndex);
-	yield* encodeString(node.nodeValue);
+	yield* encodeString(textValue(node));
 }
 
 function* encodeAttributeMutation(record, parentIndex) {
 	let attributeValue = record.target.getAttribute(record.attributeName);
 	if(attributeValue == null) {
-		yield doneMutation_2_2_0_tags.RemoveAttr;
+		yield doneMutation_3_0_0_tags.RemoveAttr;
 		yield* toUint8(parentIndex);
 		yield* encodeString(record.attributeName);
 	} else {
-		yield doneMutation_2_2_0_tags.SetAttr;
+		yield doneMutation_3_0_0_tags.SetAttr;
 		yield* toUint8(parentIndex);
 		yield* encodeString(record.attributeName);
 		yield* encodeString(attributeValue);
 	}
+}
+
+function textValue(node) {
+	return node.data != null ? node.data : node.nodeValue;
 }
 
 function sortMutations(a, b) {
@@ -834,10 +847,10 @@ function sortMutations(a, b) {
 
 class MutationEncoder {
 	constructor(rootOrIndex) {
-		if(rootOrIndex instanceof doneMutation_2_2_0_index) {
+		if(rootOrIndex instanceof doneMutation_3_0_0_index) {
 			this.index = rootOrIndex;
 		} else {
-			this.index = new doneMutation_2_2_0_index(rootOrIndex);
+			this.index = new doneMutation_3_0_0_index(rootOrIndex);
 		}
 
 		this._indexed = false;
@@ -890,7 +903,7 @@ class MutationEncoder {
 
 							instructions.push([1, parentIndex, encodeAddedMutation(node, parentIndex, childIndex), childIndex]);
 
-							doneMutation_2_2_0_walk(node, (type, node) => {
+							doneMutation_3_0_0_walk(node, (type, node) => {
 								addedNodes.add(node);
 							});
 						} else {
@@ -935,7 +948,7 @@ class MutationEncoder {
 		let index = this.index;
 		switch(event.type) {
 			case "change":
-				yield doneMutation_2_2_0_tags.Prop;
+				yield doneMutation_3_0_0_tags.Prop;
 				yield* toUint8(index.for(event.target));
 				if(event.target.type === "checkbox") {
 					yield* encodeString("checked");
@@ -965,7 +978,7 @@ function getChildIndex(parent, child) {
 	return -1;
 }
 
-var doneMutation_2_2_0_encoder = MutationEncoder;
+var doneMutation_3_0_0_encoder = MutationEncoder;
 
 const {
 	decodeString: decodeString$2,
@@ -973,7 +986,7 @@ const {
 	decodeType: decodeType$2,
 	toUint16: toUint16$2,
 	next: next$2
-} = doneMutation_2_2_0_decode;
+} = doneMutation_3_0_0_decode;
 
 
 class MutationDecoder {
@@ -998,9 +1011,9 @@ class MutationDecoder {
 			let index, ref;
 
 			switch(byte) {
-				case doneMutation_2_2_0_tags.Zero:
+				case doneMutation_3_0_0_tags.Zero:
 					break;
-				case doneMutation_2_2_0_tags.Insert:
+				case doneMutation_3_0_0_tags.Insert:
 					index = yield* toUint16$2(this);
 					ref = yield* toUint16$2(this);
 					let nodeType = yield* next$2(this);
@@ -1008,40 +1021,40 @@ class MutationDecoder {
 					mutation.node = yield* decodeNode$2(this, nodeType, document);
 					yield mutation;
 					break;
-			  case doneMutation_2_2_0_tags.Move:
+			  case doneMutation_3_0_0_tags.Move:
 					index = yield* toUint16$2(this);
 					let from = yield* next$2(this);
 					ref = yield* next$2(this);
 					mutation = {type: "move", from, index, ref};
 					yield mutation;
 					break;
-				case doneMutation_2_2_0_tags.Remove:
+				case doneMutation_3_0_0_tags.Remove:
 					index = yield* toUint16$2(this);
 					let child = yield* toUint16$2(this);
 					mutation = {type: "remove", index, child};
 					yield mutation;
 					break;
-				case doneMutation_2_2_0_tags.Text:
+				case doneMutation_3_0_0_tags.Text:
 					index = yield* toUint16$2(this);
 					let value = yield* decodeString$2(this);
 					mutation = {type: "text", index, value};
 					yield mutation;
 					break;
-				case doneMutation_2_2_0_tags.SetAttr:
+				case doneMutation_3_0_0_tags.SetAttr:
 					index = yield* toUint16$2(this);
 					let attrName = yield* decodeString$2(this);
 					let newValue = yield* decodeString$2(this);
 					mutation = {type: "set-attribute", index, attrName, newValue};
 					yield mutation;
 					break;
-				case doneMutation_2_2_0_tags.RemoveAttr: {
+				case doneMutation_3_0_0_tags.RemoveAttr: {
 					index = yield* toUint16$2(this);
 					let attrName = yield* decodeString$2(this);
 					mutation = {type: "remove-attribute", index, attrName };
 					yield mutation;
 					break;
 				}
-				case doneMutation_2_2_0_tags.Prop:
+				case doneMutation_3_0_0_tags.Prop:
 					index = yield* toUint16$2(this);
 					mutation = {type: "property", index, property: yield* decodeString$2(this), value: yield* decodeType$2(this)};
 					yield mutation;
@@ -1060,10 +1073,10 @@ function toIterator(obj) {
 	return obj;
 }
 
-var doneMutation_2_2_0_decoder = MutationDecoder;
+var doneMutation_3_0_0_decoder = MutationDecoder;
 
 var instructions = function(bytes) {
-	let decoder = new doneMutation_2_2_0_decoder(document);
+	let decoder = new doneMutation_3_0_0_decoder(document);
 	console.group("Mutations");
 	for(let mutation of decoder.decode(bytes)) {
 		console.log(mutation);
@@ -1072,8 +1085,8 @@ var instructions = function(bytes) {
 };
 
 var element = function(root, options) {
-	let encoder = new doneMutation_2_2_0_encoder(root, options);
-	let decoder = new doneMutation_2_2_0_decoder(root.ownerDocument);
+	let encoder = new doneMutation_3_0_0_encoder(root, options);
+	let decoder = new doneMutation_3_0_0_decoder(root.ownerDocument);
 
 	function callback(records) {
 		console.group("Mutations");
@@ -1089,7 +1102,7 @@ var element = function(root, options) {
 	return mo;
 };
 
-var doneMutation_2_2_0_log = {
+var doneMutation_3_0_0_log = {
 	instructions: instructions,
 	element: element
 };
@@ -1109,7 +1122,7 @@ async function read(reader, patcher) {
 	}
 
 	//!steal-remove-start
-	doneMutation_2_2_0_log.instructions(value);
+	doneMutation_3_0_0_log.instructions(value);
 	//!steal-remove-end
 
 	patcher.patch(value);
@@ -1119,7 +1132,7 @@ async function read(reader, patcher) {
 async function incrementallyRender({fetch, url, onStart}) {
 	let response = await fetch(url, { crendentials: "same-origin" });
 	let reader = response.body.getReader();
-	let patcher = new doneMutation_2_2_0_patch(document);
+	let patcher = new doneMutation_3_0_0_patch(document);
 
 	await read(reader, patcher);
 	onStart();
