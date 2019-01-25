@@ -2,7 +2,8 @@ const MutationPatcher = require("done-mutation/patch");
 const isAttached = require("./common").isAttached;
 
 //!steal-remove-start
-const log = require("done-mutation/log");
+const { Logger } = require("done-mutation/log");
+const log = new Logger();
 //!steal-remove-end
 
 // Read a value from the stream and pass it to the patcher
@@ -14,7 +15,7 @@ async function read(reader, patcher) {
 	}
 
 	//!steal-remove-start
-	log.instructions(value);
+	log.mutations(value);
 	//!steal-remove-end
 
 	patcher.patch(value);
