@@ -11,6 +11,10 @@
 		attachFrame.parentNode.removeChild(attachFrame);
 	};
 
+	self.irLinksLoaded = function() {
+		return Promise.resolve();
+	};
+
 	const window = attachFrame.contentWindow;
 	window.addEventListener("reattach-listening", () => {
 		let div = document.createElement("div");

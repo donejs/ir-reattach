@@ -1155,8 +1155,11 @@ var reattach_1 = reattach;
 
 const url = document.documentElement.dataset.streamurl;
 
-function removeSelf() {
+async function onAttachment() {
 	let p = window.parent;
+	if(p.irLinksLoaded) {
+		await p.irLinksLoaded();
+	}
 	if(p.closeSsrIframe) {
 		p.closeSsrIframe();
 	}
@@ -1164,7 +1167,7 @@ function removeSelf() {
 
 render({
 	fetch, url, onStart: () => {
-		reattach_1(window.parent.document, removeSelf);
+		reattach_1(window.parent.document, onAttachment);
 	}
 });
 
