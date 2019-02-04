@@ -22,8 +22,15 @@ async function read(reader, patcher) {
 	return true;
 }
 
-async function incrementallyRender({fetch, url, onStart}) {
+async function incrementallyRender({fetch, url, onStart, onError}) {
 	let response = await fetch(url, { crendentials: "same-origin" });
+
+	// If we get a non-200 response then there's nothing to do here.
+	if(!response.ok) {
+		onError();
+		return;
+	}
+
 	let reader = response.body.getReader();
 	let patcher = new MutationPatcher(document);
 

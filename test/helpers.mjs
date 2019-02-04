@@ -1,6 +1,6 @@
 import MutationEncoder from "./encoder.mjs";
 
-export function generateMutation(cb) {
+export function generateMutation(cb, options) {
 	const doc = document.implementation.createHTMLDocument("Server document");
 	doc.documentElement.innerHTML = document.documentElement.innerHTML;
 
@@ -10,7 +10,7 @@ export function generateMutation(cb) {
 	}
 
 	new MutationObserver(records => {
-		mockFetch(doc, [records]);
+		mockFetch(doc, [records], options);
 
 		startAttaching();
 	}).observe(doc, { childList: true, subtree: true });
@@ -18,7 +18,7 @@ export function generateMutation(cb) {
 	cb(doc);
 }
 
-export function mockFetch(document, mutations) {
+export function mockFetch(document, mutations, options = {}) {
 	const oldFetch = self.fetch;
 	const encoder = new MutationEncoder(document);
 	const records = mutations.map(m => encoder.encode(m));
@@ -40,6 +40,7 @@ export function mockFetch(document, mutations) {
 		}
 
 		let response = {
+			ok: options.ok !== false,
 			body: {
 				getReader() {
 					return new Reader();

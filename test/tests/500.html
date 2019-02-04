@@ -1,0 +1,15 @@
+<!doctype html>
+
+<html lang="en">
+<head><title>Some Title</title>
+<body>
+	<iframe id="attachFrame" src="./500-iframe.html"></iframe>
+	<script data-noop></script>
+
+	<script type="module">
+	self.closeSsrIframe = function() {
+		attachFrame.parentNode.removeChild(attachFrame);
+	};
+	</script>
+</body>
+</html>
