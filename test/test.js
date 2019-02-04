@@ -24,3 +24,15 @@ QUnit.test("Swaps a frament into the document", function(){
 	F("#testing").exists().text(/Testing/, "Updated to the autorendered content");
 	F("iframe").missing("iframe removed");
 });
+
+
+QUnit.module("500 errors", {
+	setup: function(){
+		F.open("//tests/500.html");
+	}
+});
+
+QUnit.test("Does not attempt to read bytestream", function(){
+	//F("#testing").exists().text(/Testing/, "Updated to the autorendered content");
+	F("iframe").missing("iframe removed");
+});

@@ -14,7 +14,9 @@ async function onAttachment() {
 }
 
 render({
-	fetch, url, onStart: () => {
+	fetch, url,
+	onStart: () => {
 		reattach(window.parent.document, onAttachment);
-	}
+	},
+	onError: onAttachment
 });
