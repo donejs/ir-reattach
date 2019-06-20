@@ -1,6 +1,6 @@
 # done-ssr-incremental-rendering-client
 
-[![Build Status](https://travis-ci.org/donejs/done-ssr-incremental-rendering-client.svg?branch=master)](https://travis-ci.org/donejs/done-ssr-incremental-rendering-client)
+[![Build Status](https://travis-ci.org/donejs/done-ssr-incremental-rendering-client.svg?branch=master)](https://travis-ci.org/donejs/done-ssr-incremental-rendering-client) [![Greenkeeper badge](https://badges.greenkeeper.io/donejs/ir-reattach.svg)](https://greenkeeper.io/)
 
 The client code for incremental rendering
 
